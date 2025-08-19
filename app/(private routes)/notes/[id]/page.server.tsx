@@ -30,7 +30,7 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
         description:
           note.content.substring(0, 160) +
           (note.content.length > 160 ? "..." : ""),
-        url: `https://08-zustand-ten-lake.vercel.app/notes/${id}`,
+        url: `https://https://09-auth-nine-tawny.vercel.app//notes/${id}`,
         siteName: "NoteHub",
         images: [
           {
@@ -53,7 +53,7 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
         title: `Note: ${id} | NoteHub`,
         description:
           "View this note on NoteHub, your app for creating and organizing notes.",
-        url: `https://08-zustand-ten-lake.vercel.app/notes/${id}`,
+        url: `https://09-auth-nine-tawny.vercel.app/${id}`,
         siteName: "NoteHub",
         images: [
           {

@@ -6,7 +6,7 @@ import {
 import NoteDetailsClient from "./NoteDetails.client";
 import { notFound } from "next/navigation";
 import { Metadata } from "next";
-import { fetchNoteById } from "../../../lib/api";
+import { fetchNoteById } from "@/lib/api/api";
 
 type Props = {
   params: Promise<{ id: string }>;

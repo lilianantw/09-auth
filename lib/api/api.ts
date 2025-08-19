@@ -1,6 +1,5 @@
-// lib/api.ts
 import axios from "axios";
-import type { Note, NoteTag, CreateNoteData } from "../types/note";
+import type { Note, NoteTag, CreateNoteData } from "@/types/note";
 
 // Тип відповіді для списку нотаток
 export interface FetchNotesResponse {
@@ -15,26 +14,21 @@ export interface CreateNotePayload {
   tag: NoteTag;
 }
 
-// Создаём экземпляр axios с базовым URL из .env
+// Создаём экземпляр axios с базовым URL из .env и поддержкой cookies
 const api = axios.create({
-  baseURL:
-    process.env.NEXT_PUBLIC_API_URL || "https://notehub-public.goit.study/api",
+  baseURL: process.env.NEXT_PUBLIC_API_URL || "http://localhost:3000",
   headers: {
     "Content-Type": "application/json",
   },
+  withCredentials: true, // обязательно для работы с куками
 });
 
-// Добавляем интерцептор для авторизации
-api.interceptors.request.use((config) => {
-  const token = process.env.NEXT_PUBLIC_NOTEHUB_TOKEN;
-  if (token) {
-    config.headers = config.headers ?? {};
-    config.headers.Authorization = `Bearer ${token}`;
-  }
-  return config;
-});
+export default api;
 
-// Получить все заметки (с пагинацией, поиском и фильтром по тегу)
+// --------------------------
+// Функции для работы с заметками
+// --------------------------
+
 export async function fetchNotes({
   page = 1,
   search = "",
@@ -46,13 +40,8 @@ export async function fetchNotes({
 }): Promise<FetchNotesResponse> {
   try {
     const params: Record<string, string | number | undefined> = { page };
-
-    if (search) {
-      params.search = search;
-    }
-    if (tag && tag.toLowerCase() !== "all") {
-      params.tag = tag;
-    }
+    if (search) params.search = search;
+    if (tag && tag.toLowerCase() !== "all") params.tag = tag;
 
     const response = await api.get<FetchNotesResponse>("/notes", { params });
     return response.data;
@@ -66,7 +55,6 @@ export async function fetchNotes({
   }
 }
 
-// Создать новую заметку
 export async function createNote(payload: CreateNoteData): Promise<Note> {
   try {
     const response = await api.post<Note>("/notes", payload);
@@ -81,7 +69,6 @@ export async function createNote(payload: CreateNoteData): Promise<Note> {
   }
 }
 
-// Удалить заметку по ID
 export async function deleteNote(id: string): Promise<Note> {
   try {
     const response = await api.delete<Note>(`/notes/${id}`);
@@ -96,7 +83,6 @@ export async function deleteNote(id: string): Promise<Note> {
   }
 }
 
-// Получить заметку по ID
 export async function fetchNoteById(id: string): Promise<Note> {
   try {
     const response = await api.get<Note>(`/notes/${id}`);

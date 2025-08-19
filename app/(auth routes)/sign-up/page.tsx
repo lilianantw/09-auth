@@ -3,6 +3,7 @@
 import { useRouter } from "next/navigation";
 import { registerUser } from "@/lib/api/clientApi";
 import css from "./SignUpPage.module.css";
+
 export default function SignUpPage() {
   const router = useRouter();
 
@@ -15,9 +16,10 @@ export default function SignUpPage() {
       const password = formData.get("password") as string;
 
       await registerUser(email, password);
-      router.push("/profile"); // редірект після успішної реєстрації
+      router.push("/profile"); // редирект после регистрации
     } catch (err) {
-      console.error(err);
+      console.error("Register failed:", err);
+      alert("Registration error");
     }
   };
 
@@ -52,8 +54,6 @@ export default function SignUpPage() {
             Register
           </button>
         </div>
-
-        <p className={css.error}>Error</p>
       </form>
     </main>
   );

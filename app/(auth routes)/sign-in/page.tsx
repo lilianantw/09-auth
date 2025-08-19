@@ -16,9 +16,10 @@ export default function SignInPage() {
       const password = formData.get("password") as string;
 
       await loginUser(email, password);
-      router.push("/profile"); // редірект після успішної автентифікації
+      router.push("/profile"); // редирект после логина
     } catch (err) {
-      console.error(err);
+      console.error("Login failed:", err);
+      alert("Invalid credentials or server error");
     }
   };
 
@@ -54,8 +55,6 @@ export default function SignInPage() {
             Log in
           </button>
         </div>
-
-        <p className={css.error}>Error</p>
       </form>
     </main>
   );

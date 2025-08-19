@@ -1,53 +1,56 @@
-import axios from "axios"; // обязательно для isAxiosError
-import api from "./api";
+import axios from "axios";
 import type { User } from "@/types/user";
+import { useAuthStore } from "@/lib/store/authStore";
 
-// Получить профиль текущего пользователя (клиентский вызов)
-export async function getCurrentUser(): Promise<User | null> {
-  try {
-    const response = await api.get<User>("/users/me", {
-      withCredentials: true, // для отправки cookies
-    });
-    return response.data;
-  } catch (error: unknown) {
-    if (axios.isAxiosError(error) && error.response?.status === 401) {
-      // Неавторизованный пользователь
-      return null;
-    }
-    throw error;
-  }
-}
+// используем только переменную окружения
+const apiInstance = axios.create({
+  baseURL: process.env.NEXT_PUBLIC_API_URL,
+  headers: { "Content-Type": "application/json" },
+  withCredentials: true,
+});
 
-// Регистрация нового пользователя
+// Регистрация
 export async function registerUser(
   email: string,
   password: string
 ): Promise<User> {
-  try {
-    const response = await api.post<User>(
-      "/auth/register",
-      { email, password },
-      { withCredentials: true } // поддержка cookies
-    );
-    return response.data;
-  } catch (error: unknown) {
-    throw error;
-  }
+  const response = await apiInstance.post<User>("/auth/register", {
+    email,
+    password,
+  });
+  const user = response.data;
+  useAuthStore.getState().setUser(user);
+  return user;
 }
 
-// Авторизация пользователя (логин)
+// Логин
 export async function loginUser(
   email: string,
   password: string
 ): Promise<User> {
+  const response = await apiInstance.post<User>("/auth/login", {
+    email,
+    password,
+  });
+  const user = response.data;
+  useAuthStore.getState().setUser(user);
+  return user;
+}
+
+// Логаут
+export async function logoutUser(): Promise<void> {
+  await apiInstance.post("/auth/logout");
+  useAuthStore.getState().clearIsAuthenticated();
+}
+
+// Получить текущего пользователя
+export async function getCurrentUser(): Promise<User | null> {
   try {
-    const response = await api.post<User>(
-      "/auth/login",
-      { email, password },
-      { withCredentials: true } // поддержка cookies
-    );
+    const response = await apiInstance.get<User>("/users/me");
     return response.data;
   } catch (error: unknown) {
+    if (axios.isAxiosError(error) && error.response?.status === 401)
+      return null;
     throw error;
   }
 }

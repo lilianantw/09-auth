@@ -1,4 +1,3 @@
-// lib/store/authStore.ts
 "use client";
 
 import { create } from "zustand";
@@ -18,22 +17,18 @@ export const useAuthStore = create<AuthStore>()(
       user: null,
       isAuthenticated: false,
 
-      // Встановлюємо користувача після успішного логіну або отримання сесії
       setUser: (user: User) =>
         set({
           user,
           isAuthenticated: true,
         }),
 
-      // Очищаємо стан при логауті
       clearIsAuthenticated: () =>
         set({
           user: null,
           isAuthenticated: false,
         }),
     }),
-    {
-      name: "auth-storage", // ключ для localStorage
-    }
+    { name: "auth-storage" }
   )
 );

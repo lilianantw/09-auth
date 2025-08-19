@@ -16,7 +16,8 @@ export interface CreateNotePayload {
 
 // Создаём экземпляр axios с базовым URL из .env и поддержкой cookies
 const api = axios.create({
-  baseURL: process.env.NEXT_PUBLIC_API_URL || "http://localhost:3000",
+  baseURL:
+    process.env.NEXT_PUBLIC_API_URL || "https://09-auth-nine-tawny.vercel.app/",
   headers: {
     "Content-Type": "application/json",
   },

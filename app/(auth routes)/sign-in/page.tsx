@@ -2,10 +2,12 @@
 
 import { useRouter } from "next/navigation";
 import { loginUser } from "@/lib/api/clientApi";
+import { useAuthStore } from "@/lib/store/authStore";
 import css from "./SignInPage.module.css";
 
 export default function SignInPage() {
   const router = useRouter();
+  const { setUser } = useAuthStore();
 
   const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
@@ -15,8 +17,14 @@ export default function SignInPage() {
       const email = formData.get("email") as string;
       const password = formData.get("password") as string;
 
-      await loginUser(email, password);
-      router.push("/profile"); // редирект после логина
+      // Вход через clientApi
+      const user = await loginUser(email, password);
+
+      // Сохраняем пользователя в глобальном состоянии
+      setUser(user);
+
+      // Редирект на профиль
+      router.push("/profile");
     } catch (err) {
       console.error("Login failed:", err);
       alert("Invalid credentials or server error");

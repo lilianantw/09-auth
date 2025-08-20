@@ -3,7 +3,7 @@ import {
   HydrationBoundary,
   QueryClient,
 } from "@tanstack/react-query";
-import { fetchNoteById } from "@/lib/api/api";
+import { getNoteByIdServer } from "@/lib/api/serverApi"; // <- виправлений імпорт
 import NoteDetailsClient from "./NoteDetails.client";
 import { notFound } from "next/navigation";
 import { Metadata } from "next";
@@ -15,7 +15,7 @@ type Props = {
 
 export async function generateMetadata({ params }: Props): Promise<Metadata> {
   const { id } = await params;
-  const note = await fetchNoteById(id);
+  const note = await getNoteByIdServer(id); // <- serverApi
 
   if (!note || !note.id) {
     return {
@@ -50,7 +50,7 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
     openGraph: {
       title: pageTitle,
       description: pageDescription,
-      url: `https://https://09-auth-nine-tawny.vercel.app/notes/${id}`,
+      url: `https://09-auth-nine-tawny.vercel.app/notes/${id}`,
       siteName: "NoteHub",
       images: [
         {
@@ -67,22 +67,18 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
 
 export default async function NoteDetailsPage({ params }: Props) {
   const { id } = await params;
-  if (!id) {
-    notFound();
-  }
+  if (!id) notFound();
 
   const queryClient = new QueryClient();
 
   try {
     await queryClient.prefetchQuery({
       queryKey: ["note", id],
-      queryFn: () => fetchNoteById(id),
+      queryFn: () => getNoteByIdServer(id), // <- serverApi
     });
 
     const note = queryClient.getQueryData(["note", id]) as Note | undefined;
-    if (!note || !note.id) {
-      notFound();
-    }
+    if (!note || !note.id) notFound();
   } catch (error) {
     console.error("Failed to fetch note:", error);
     notFound();

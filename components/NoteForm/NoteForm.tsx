@@ -2,7 +2,7 @@
 import { useRouter } from "next/navigation";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { useNoteStore } from "@/lib/store/noteStore";
-import { createNote } from "@/lib/api/api";
+import { createNote } from "@/lib/api/clientApi";
 import css from "./NoteForm.module.css";
 
 export default function NoteForm() {
@@ -33,10 +33,13 @@ export default function NoteForm() {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    const now = new Date().toISOString();
     mutation.mutate({
       title: draft.title,
       content: draft.content,
       tag: draft.tag as "Todo" | "Work" | "Personal" | "Meeting" | "Shopping",
+      updatedAt: now,
+      date: now,
     });
   };
 

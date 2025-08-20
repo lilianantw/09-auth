@@ -1,7 +1,7 @@
 "use client";
 
 import { useQuery } from "@tanstack/react-query";
-import { fetchNoteById } from "@/lib/api/api";
+import { getNoteById } from "@/lib/api/clientApi"; // <- виправлений імпорт
 import css from "./NoteDetails.module.css";
 import Modal from "@/components/Modal/Modal";
 import { useRouter } from "next/navigation";
@@ -19,7 +19,7 @@ export default function NoteDetailsClient({ noteId }: NoteDetailsClientProps) {
     isError,
   } = useQuery({
     queryKey: ["note", noteId],
-    queryFn: () => fetchNoteById(noteId),
+    queryFn: () => getNoteById(noteId), // <- використання getNoteById
     refetchOnMount: false,
   });
 
@@ -48,7 +48,6 @@ export default function NoteDetailsClient({ noteId }: NoteDetailsClientProps) {
     );
   }
 
-  // Форматируем дату (пример)
   const formattedDate = new Date(note.date).toLocaleDateString("ru-RU", {
     year: "numeric",
     month: "long",

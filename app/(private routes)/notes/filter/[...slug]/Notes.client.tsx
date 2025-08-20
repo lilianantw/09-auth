@@ -9,11 +9,17 @@ import SearchBox from "@/components/SearchBox/SearchBox";
 import Link from "next/link";
 import css from "./NotesPage.module.css";
 import { Note } from "@/types/note";
+import { FetchNotesResponse } from "@/lib/api/api";
 
 interface NotesClientProps {
   initialNotes: Note[];
   initialTotalPages: number;
   selectedTag?: string;
+}
+
+interface NotesQueryData {
+  notes: Note[];
+  totalPages: number;
 }
 
 export default function NotesClient({
@@ -25,7 +31,7 @@ export default function NotesClient({
   const [search, setSearch] = useState("");
   const [debouncedSearch] = useDebounce(search, 500);
 
-  const { data, isLoading, error } = useQuery({
+  const { data, isLoading, error } = useQuery<NotesQueryData>({
     queryKey: ["notes", page, debouncedSearch, selectedTag],
     queryFn: () =>
       fetchNotes({ page, search: debouncedSearch, tag: selectedTag }),

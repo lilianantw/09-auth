@@ -3,7 +3,7 @@
 import { useQuery } from "@tanstack/react-query";
 import { useRouter } from "next/navigation";
 import Modal from "@/components/Modal/Modal";
-import { fetchNoteById } from "@/lib/api/api";
+import { getNoteById } from "@/lib/api/clientApi"; // <- правильний імпорт з clientApi
 import type { Note } from "@/types/note";
 
 interface NotePreviewModalProps {
@@ -18,10 +18,10 @@ export default function NotePreviewModal({ noteId }: NotePreviewModalProps) {
     isLoading,
     error,
   } = useQuery<Note, Error>({
-    queryKey: ["notePreview", noteId], // Уникальный ключ для запроса
-    queryFn: () => fetchNoteById(noteId), // Функция получения данных
-    refetchOnMount: false, // Отключение повторного фетча при монтировании
-    staleTime: 5000, // Данные считаются свежими 5 секунд
+    queryKey: ["notePreview", noteId],
+    queryFn: () => getNoteById(noteId), // <- clientApi
+    refetchOnMount: false,
+    staleTime: 5000,
   });
 
   const closeModal = () => router.back();
@@ -32,12 +32,14 @@ export default function NotePreviewModal({ noteId }: NotePreviewModalProps) {
         <div>Загрузка...</div>
       </Modal>
     );
+
   if (error)
     return (
       <Modal onClose={closeModal}>
         <div>Ошибка: {error.message}</div>
       </Modal>
     );
+
   if (!note)
     return (
       <Modal onClose={closeModal}>

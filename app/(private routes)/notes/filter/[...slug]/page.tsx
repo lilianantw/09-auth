@@ -1,5 +1,5 @@
-import { fetchNotes } from "@/lib/api/api";
 import NotesClient from "./Notes.client";
+import { getNotesServer } from "@/lib/api/serverApi"; // <- правильный импорт
 import { Metadata } from "next";
 
 type Props = {
@@ -8,10 +8,8 @@ type Props = {
 
 export async function generateMetadata({ params }: Props): Promise<Metadata> {
   const { slug } = await params;
-  // Якщо slug перший елемент 'all', то тег не вказуємо (undefined)
   const tag = slug?.[0]?.toLowerCase() === "all" ? undefined : slug?.[0];
 
-  // Формуємо назву та опис з урахуванням фільтру, узгоджені з layout.tsx
   const pageTitle = tag ? `Notes - ${tag} | NoteHub` : "All Notes | NoteHub";
   const pageDescription = tag
     ? `Browse notes filtered by ${tag} on NoteHub. Create and organize notes with quick search and clean design.`
@@ -42,11 +40,19 @@ export default async function NotesPage({ params }: Props) {
   const { slug } = await params;
   const tag = slug?.[0]?.toLowerCase() === "all" ? undefined : slug?.[0];
 
-  const { notes, totalPages } = await fetchNotes({ page: 1, search: "", tag });
+  // Получаем все заметки с сервера
+  const allNotes = await getNotesServer();
+
+  // Фильтруем по тегу, если указан
+  const filteredNotes = tag
+    ? allNotes.filter((note) => note.tag === tag)
+    : allNotes;
+
+  const totalPages = 1; // пока что можно фиксировать 1, если пагинация не нужна
 
   return (
     <NotesClient
-      initialNotes={notes}
+      initialNotes={filteredNotes}
       initialTotalPages={totalPages}
       selectedTag={tag}
     />

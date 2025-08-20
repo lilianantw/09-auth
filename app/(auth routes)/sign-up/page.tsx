@@ -1,11 +1,13 @@
 "use client";
 
 import { useRouter } from "next/navigation";
-import { registerUser } from "@/lib/api/clientApi";
+import { registerUser } from "@/lib/api/clientApi"; // корректная функция
+import { useAuthStore } from "@/lib/store/authStore";
 import css from "./SignUpPage.module.css";
 
 export default function SignUpPage() {
   const router = useRouter();
+  const { setUser } = useAuthStore();
 
   const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
@@ -15,8 +17,14 @@ export default function SignUpPage() {
       const email = formData.get("email") as string;
       const password = formData.get("password") as string;
 
-      await registerUser(email, password);
-      router.push("/profile"); // редирект после регистрации
+      // Вызываем registerUser из clientApi
+      const user = await registerUser(email, password);
+
+      // Сохраняем пользователя в глобальном состоянии
+      setUser(user);
+
+      // Перенаправляем на профиль
+      router.push("/profile");
     } catch (err) {
       console.error("Register failed:", err);
       alert("Registration error");

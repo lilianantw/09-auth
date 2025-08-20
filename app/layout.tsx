@@ -2,6 +2,7 @@ import type { ReactNode } from "react";
 import { Metadata } from "next";
 import { Roboto } from "next/font/google";
 import TanStackProvider from "@/components/TanStackProvider/TanStackProvider";
+import AuthProvider from "@/components/AuthProvider/AuthProvider";
 import Header from "@/components/Header/Header";
 import Footer from "@/components/Footer/Footer";
 import "./globals.css";
@@ -51,15 +52,17 @@ export default function RootLayout({ children, modal }: LayoutProps) {
     >
       <body>
         <TanStackProvider>
-          <div className="container">
-            <Header />
-            <main>{children}</main>
-            <Footer />
-          </div>
+          <AuthProvider>
+            <div className="container">
+              <Header />
+              <main>{children}</main>
+              <Footer />
+            </div>
 
-          {modal}
+            {modal}
 
-          <div id="modal-root" />
+            <div id="modal-root" />
+          </AuthProvider>
         </TanStackProvider>
       </body>
     </html>

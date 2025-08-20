@@ -1,17 +1,36 @@
 "use client";
 
-import { useRouter } from "next/navigation";
-import { useAuthStore } from "@/lib/store/authStore";
-import css from "./Header.module.css";
 import Link from "next/link";
+import { useRouter } from "next/navigation";
+import { useEffect } from "react";
+import { useAuthStore } from "@/lib/store/authStore";
+import { logoutUser, getCurrentUser } from "@/lib/api/clientApi";
+import css from "./Header.module.css";
 
-export default function AuthNavigation() {
+function AuthNavigation() {
   const router = useRouter();
-  const { user, isAuthenticated, clearIsAuthenticated } = useAuthStore();
+  const { user, isAuthenticated, setUser, clearIsAuthenticated } =
+    useAuthStore();
 
-  const handleLogout = () => {
-    clearIsAuthenticated();
-    router.push("/sign-in");
+  // Проверяем сессию при загрузке компонента
+  useEffect(() => {
+    const fetchUser = async () => {
+      const currentUser = await getCurrentUser();
+      if (!currentUser) clearIsAuthenticated();
+      else setUser(currentUser);
+    };
+    fetchUser();
+  }, [setUser, clearIsAuthenticated]);
+
+  const handleLogout = async () => {
+    try {
+      await logoutUser();
+      router.push("/sign-in");
+    } catch (err) {
+      console.error("Ошибка при логауте:", err);
+    } finally {
+      clearIsAuthenticated();
+    }
   };
 
   return (
@@ -57,5 +76,18 @@ export default function AuthNavigation() {
         </>
       )}
     </>
+  );
+}
+
+export default function Header() {
+  return (
+    <header className={css.header}>
+      <Link href="/" className={css.logo}>
+        NoteHub
+      </Link>
+      <ul className={css.navigation}>
+        <AuthNavigation />
+      </ul>
+    </header>
   );
 }

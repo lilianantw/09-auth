@@ -4,49 +4,54 @@ import { useState } from "react";
 import { useRouter } from "next/navigation";
 import Image from "next/image";
 import { useAuthStore } from "@/lib/store/authStore";
+import { updateUserProfile } from "@/lib/api/clientApi"; // <- исправлено
 import css from "./EditProfilePage.module.css";
 
 export default function EditProfilePage() {
   const router = useRouter();
-  const { user, setUser } = useAuthStore(); // Zustand store для текущего пользователя
+  const { user, setUser } = useAuthStore();
 
-  const [username, setUsername] = useState(user?.name || ""); // локальное состояние для username
+  const [username, setUsername] = useState(user?.username || "");
+  const [loading, setLoading] = useState(false);
 
-  // Сохранение изменений
-  const handleSave = (e: React.FormEvent) => {
+  const handleSave = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!user) return;
 
-    setUser({ ...user, name: username }); // обновляем только имя пользователя в store
-    router.push("/profile"); // редирект на страницу профиля
+    try {
+      setLoading(true);
+      // Вызываем функцию clientApi
+      const updatedUser = await updateUserProfile({ username });
+      setUser(updatedUser);
+      router.push("/profile");
+    } catch (err) {
+      console.error("Failed to update profile:", err);
+      alert("Error updating profile");
+    } finally {
+      setLoading(false);
+    }
   };
 
-  // Отмена редактирования
   const handleCancel = () => {
-    router.push("/profile"); // возвращаемся на страницу профиля
+    router.push("/profile");
   };
 
   return (
     <main className={css.mainContent}>
-      {" "}
-      {/* Основной контейнер страницы */}
       <div className={css.profileCard}>
-        {" "}
-        {/* Карточка профиля */}
-        <h1 className={css.formTitle}>Edit Profile</h1> {/* Заголовок */}
-        {/* Аватар пользователя */}
+        <h1 className={css.formTitle}>Edit Profile</h1>
+
         <div className={css.avatarWrapper}>
           <Image
-            src={user?.avatar || "/default-avatar.png"} // fallback если аватара нет
+            src={user?.avatar || "/default-avatar.png"}
             alt="User Avatar"
             width={120}
             height={120}
             className={css.avatar}
           />
         </div>
-        {/* Форма редактирования */}
+
         <form onSubmit={handleSave} className={css.profileInfo}>
-          {/* Поле для редактирования username */}
           <div className={css.usernameWrapper}>
             <label htmlFor="username">Username:</label>
             <input
@@ -56,23 +61,21 @@ export default function EditProfilePage() {
               onChange={(e) => setUsername(e.target.value)}
               required
               className={css.input}
+              disabled={loading}
             />
           </div>
 
-          {/* Отображение email (только чтение) */}
           <p>Email: {user?.email || "unknown@example.com"}</p>
 
-          {/* Кнопки действий */}
           <div className={css.actions}>
-            <button type="submit" className={css.saveButton}>
-              {" "}
-              {/* Сохранить изменения */}
+            <button type="submit" className={css.saveButton} disabled={loading}>
               Save
             </button>
             <button
               type="button"
-              className={css.cancelButton} /* Отмена редактирования */
+              className={css.cancelButton}
               onClick={handleCancel}
+              disabled={loading}
             >
               Cancel
             </button>

@@ -119,6 +119,33 @@ export async function getNotes(): Promise<Note[]> {
   return response.data;
 }
 
+// Функция для получения заметок с пагинацией, поиском и фильтрацией по тегу
+export async function fetchNotes({
+  page = 1,
+  search = "",
+  tag = "",
+}: {
+  page?: number;
+  search?: string;
+  tag?: string;
+}): Promise<{ notes: Note[]; totalPages: number }> {
+  const params: Record<string, string | number> = {
+    page,
+    perPage: 12, // как в route.ts
+  };
+
+  if (search) params.search = search;
+  if (tag) params.tag = tag;
+
+  const response = await api.get<Note[]>("/api/notes", { params });
+  // Пока что возвращаем фиксированное значение totalPages, так как API может не возвращать эту информацию
+  // В будущем это значение должно быть получено из заголовков ответа или из самого ответа API
+  return {
+    notes: response.data,
+    totalPages: 1, // фиксированное значение, как в page.tsx
+  };
+}
+
 export async function getNoteById(id: string): Promise<Note> {
   const response = await api.get<Note>(`/api/notes/${id}`);
   return response.data;

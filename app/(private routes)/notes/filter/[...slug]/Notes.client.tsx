@@ -9,7 +9,7 @@ import SearchBox from "@/components/SearchBox/SearchBox";
 import Link from "next/link";
 import css from "./NotesPage.module.css";
 import { Note } from "@/types/note";
-import { FetchNotesResponse } from "@/lib/api/api";
+import { getNoteById } from "@/lib/api/api";
 
 interface NotesClientProps {
   initialNotes: Note[];

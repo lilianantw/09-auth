@@ -6,20 +6,17 @@ import {
 import NoteDetailsClient from "./NoteDetails.client";
 import { notFound } from "next/navigation";
 import { Metadata } from "next";
-import { fetchNoteById } from "@/lib/api/api";
+import { getNoteById } from "@/lib/api/clientApi"; // <- исправлено
 
 type Props = {
   params: Promise<{ id: string }>;
 };
 
-// Generate metadata with actual note data
 export async function generateMetadata({ params }: Props): Promise<Metadata> {
   const { id } = await params;
 
   try {
-    // Fetch the actual note data
-    const note = await fetchNoteById(id);
-
+    const note = await getNoteById(id); // <- исправлено
     return {
       title: `${note.title} | NoteHub`,
       description:
@@ -30,7 +27,7 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
         description:
           note.content.substring(0, 160) +
           (note.content.length > 160 ? "..." : ""),
-        url: `https://https://09-auth-nine-tawny.vercel.app/notes/${id}`,
+        url: `https://09-auth-nine-tawny.vercel.app/notes/${id}`,
         siteName: "NoteHub",
         images: [
           {
@@ -43,8 +40,7 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
         type: "article",
       },
     };
-  } catch (error) {
-    // If note not found, return default metadata
+  } catch {
     return {
       title: `Note: ${id} | NoteHub`,
       description:
@@ -71,11 +67,8 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
 
 export default async function NoteDetailsPage({ params }: Props) {
   const { id } = await params;
-  if (!id) {
-    notFound();
-  }
+  if (!id) notFound();
 
-  // Don't prefetch on the server! Let the client component load the data.
   const queryClient = new QueryClient();
 
   return (

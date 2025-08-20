@@ -7,31 +7,34 @@
   color: white;
 }
 
-.header a {
-  text-decoration: none;
+.logo {
   color: white;
   font-size: 1.5rem;
   font-weight: bold;
+  text-decoration: none;
 }
 
-.header a:hover {
-  color: #ddd;
+.navContainer {
+  display: flex;
+  align-items: center;
+  gap: 2rem;
 }
 
 .navigation {
-  list-style-type: none;
+  display: flex;
+  align-items: center;
+  gap: 2rem;
+  list-style: none;
   margin: 0;
   padding: 0;
-  display: flex;
-  gap: 1rem;
 }
 
-.navigation li a {
-  text-decoration: none;
+.navLink {
   color: white;
+  text-decoration: none;
   font-size: 1rem;
 }
 
-.navigation li a:hover {
+.navLink:hover {
   color: #ddd;
 }

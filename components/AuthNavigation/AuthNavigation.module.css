@@ -1,7 +1,19 @@
+.authContainer {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+}
+
+.userBlock {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
 .userEmail {
   color: white;
-  margin-right: 0.5rem;
   font-size: 0.9rem;
+  margin: 0;
 }
 
 .logoutButton {
@@ -15,16 +27,12 @@
   transition:
     background-color 0.3s ease,
     color 0.3s ease;
+  margin: 0;
 }
 
 .logoutButton:hover {
   background-color: white;
   color: #333;
-}
-
-.navigationItem {
-  display: flex;
-  align-items: center;
 }
 
 .navigationLink {
@@ -35,11 +43,4 @@
 
 .navigationLink:hover {
   color: #ddd;
-}
-.navigationList {
-  display: flex;
-  gap: 1rem;
-  list-style: none;
-  margin: 0;
-  padding: 0;
 }

@@ -1,33 +1,28 @@
 "use client";
-
+import { useState } from "react";
 import { useRouter } from "next/navigation";
-import { registerUser } from "@/lib/api/clientApi"; // корректная функция
+import { registerUser } from "@/lib/api/clientApi";
 import { useAuthStore } from "@/lib/store/authStore";
 import css from "./SignUpPage.module.css";
 
 export default function SignUpPage() {
   const router = useRouter();
   const { setUser } = useAuthStore();
+  const [error, setError] = useState("");
 
   const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
-
     try {
       const formData = new FormData(e.currentTarget);
       const email = formData.get("email") as string;
       const password = formData.get("password") as string;
 
-      // Вызываем registerUser из clientApi
       const user = await registerUser(email, password);
-
-      // Сохраняем пользователя в глобальном состоянии
       setUser(user);
-
-      // Перенаправляем на профиль
       router.push("/profile");
     } catch (err) {
       console.error("Register failed:", err);
-      alert("Registration error");
+      setError("Registration error: User with this email already exists");
     }
   };
 
@@ -45,7 +40,6 @@ export default function SignUpPage() {
             required
           />
         </div>
-
         <div className={css.formGroup}>
           <label htmlFor="password">Password</label>
           <input
@@ -56,12 +50,12 @@ export default function SignUpPage() {
             required
           />
         </div>
-
         <div className={css.actions}>
           <button type="submit" className={css.submitButton}>
             Register
           </button>
         </div>
+        {error && <p className={css.error}>{error}</p>}
       </form>
     </main>
   );

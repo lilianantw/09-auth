@@ -9,8 +9,8 @@ export async function POST(req: NextRequest) {
   try {
     const body = await req.json();
 
-    // Отправка запроса через инстанс api
-    const apiRes = await api.post("auth/register", body);
+    // ✅ Виправлено: додано слеш
+    const apiRes = await api.post("/auth/register", body);
 
     const cookieStore = await cookies();
     const setCookie = apiRes.headers["set-cookie"];

@@ -21,8 +21,9 @@ export async function getCurrentUser(): Promise<User | null> {
 
 export async function checkSession(): Promise<boolean> {
   try {
-    await api.get("/auth/session");
-    return true;
+    const response = await api.get("/auth/session");
+    // Перевіряємо не лише статус, а й логічне поле success
+    return response.data?.success === true;
   } catch {
     return false;
   }

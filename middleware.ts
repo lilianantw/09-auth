@@ -11,7 +11,7 @@ interface CookieWithOptions {
 }
 
 export async function middleware(req: NextRequest) {
-  const cookieStore = await cookies(); // ✅ додали await
+  const cookieStore = await cookies();
   const accessToken = cookieStore.get("accessToken")?.value;
   const refreshToken = cookieStore.get("refreshToken")?.value;
 
@@ -25,18 +25,19 @@ export async function middleware(req: NextRequest) {
 
   const session = await checkSession(accessToken, refreshToken);
 
+  // Якщо неавторизований — доступ заборонено до приватних сторінок
   if (!session.valid && isPrivatePage) {
     return NextResponse.redirect(new URL("/sign-in", req.url));
   }
 
+  // Якщо авторизований — не може відкривати auth-сторінки
   if (session.valid && isAuthPage) {
-    return NextResponse.redirect(new URL("/", req.url));
+    return NextResponse.redirect(new URL("/profile", req.url)); // ✅ Змінено з "/" на "/profile"
   }
 
   const res = NextResponse.next();
   if (session.cookies) {
     session.cookies.forEach((cookie: CookieWithOptions) => {
-      // Only set the cookie if the value is not undefined
       if (cookie.value !== undefined) {
         res.cookies.set(cookie.name, cookie.value, cookie.options);
       }

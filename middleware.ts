@@ -1,31 +1,20 @@
 import { NextResponse } from "next/server";
 import type { NextRequest } from "next/server";
+import { cookies } from "next/headers";
+import { checkSession } from "./lib/api/serverApi";
+import type { ResponseCookie } from "next/dist/compiled/@edge-runtime/cookies";
 
-// Допоміжна функція перевірки токена через бекенд
-async function verifySession(token: string | undefined) {
-  if (!token) return { valid: false };
-
-  try {
-    const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/auth/refresh`, {
-      method: "POST",
-      headers: { Cookie: `token=${token}` },
-      credentials: "include",
-    });
-
-    if (res.ok) {
-      // якщо бекенд повернув новий токен
-      const setCookie = res.headers.get("set-cookie");
-      return { valid: true, setCookie };
-    }
-
-    return { valid: false };
-  } catch (err) {
-    return { valid: false };
-  }
+interface CookieWithOptions {
+  name: string;
+  value: string | undefined;
+  options?: Partial<ResponseCookie>;
 }
 
 export async function middleware(req: NextRequest) {
-  const token = req.cookies.get("token")?.value;
+  const cookieStore = await cookies(); // ✅ додали await
+  const accessToken = cookieStore.get("accessToken")?.value;
+  const refreshToken = cookieStore.get("refreshToken")?.value;
+
   const { pathname } = req.nextUrl;
 
   const isAuthPage =
@@ -34,28 +23,29 @@ export async function middleware(req: NextRequest) {
   const isPrivatePage =
     pathname.startsWith("/profile") || pathname.startsWith("/notes");
 
-  // 🔹 Перевіряємо токен через бекенд
-  const session = await verifySession(token);
+  const session = await checkSession(accessToken, refreshToken);
 
-  // 🔹 Якщо немає валідного токена → редірект на /sign-in
   if (!session.valid && isPrivatePage) {
     return NextResponse.redirect(new URL("/sign-in", req.url));
   }
 
-  // 🔹 Якщо токен валідний і користувач заходить на sign-in / sign-up → редірект на /
   if (session.valid && isAuthPage) {
     return NextResponse.redirect(new URL("/", req.url));
   }
 
-  // 🔹 Якщо бекенд повернув оновлений токен → додаємо його у відповідь
   const res = NextResponse.next();
-  if (session.setCookie) {
-    res.headers.set("set-cookie", session.setCookie);
+  if (session.cookies) {
+    session.cookies.forEach((cookie: CookieWithOptions) => {
+      // Only set the cookie if the value is not undefined
+      if (cookie.value !== undefined) {
+        res.cookies.set(cookie.name, cookie.value, cookie.options);
+      }
+    });
   }
 
   return res;
 }
 
 export const config = {
-  matcher: ["/profile", "/notes/:path*", "/sign-in", "/sign-up"],
+  matcher: ["/profile/:path*", "/notes/:path*", "/sign-in", "/sign-up"],
 };

@@ -1,121 +1,183 @@
-import axios from "axios";
+"use server";
+
+import axios, { type AxiosResponse } from "axios";
 import { cookies } from "next/headers";
+import { parse } from "cookie";
 import type { User } from "@/types/user";
 import type { Note } from "@/types/note";
 
-// Базовый экземпляр axios
+// Налаштований екземпляр Axios
 const api = axios.create({
-  baseURL: process.env.NEXT_PUBLIC_API_URL,
+  baseURL: process.env.NEXT_PUBLIC_API_URL + "/api", // додаємо /api
   headers: {
     "Content-Type": "application/json",
   },
   withCredentials: true,
 });
 
-// ===== Пользователь =====
+// ===== Користувач =====
 
-// Получить текущего пользователя (серверная функция)
+// Отримати поточного користувача
 export async function getCurrentUserServer(): Promise<User | null> {
   try {
     const cookieStore = await cookies();
-    const cookie = cookieStore.toString();
+    const cookieStr = cookieStore
+      .getAll()
+      .map(({ name, value }) => `${name}=${value}`)
+      .join("; ");
 
-    const response = await api.get<User>("/api/users/me", {
-      headers: { Cookie: cookie },
-      withCredentials: true,
+    const response = await api.get<User>("/users/me", {
+      headers: { Cookie: cookieStr },
     });
 
     return response.data;
   } catch (error: unknown) {
-    if (axios.isAxiosError(error) && error.response?.status === 401) {
+    if (axios.isAxiosError(error) && error.response?.status === 401)
       return null;
-    }
     throw error;
   }
 }
 
-// Обновить профиль пользователя
+// Оновити профіль користувача
 export async function updateUserProfileServer(
   data: Partial<User>
 ): Promise<User> {
   const cookieStore = await cookies();
-  const cookie = cookieStore.toString();
+  const cookieStr = cookieStore
+    .getAll()
+    .map(({ name, value }) => `${name}=${value}`)
+    .join("; ");
 
-  const response = await api.put<User>("/api/users/me", data, {
-    headers: { Cookie: cookie },
-    withCredentials: true,
+  const response = await api.patch<User>("/users/me", data, {
+    headers: { Cookie: cookieStr },
   });
 
   return response.data;
 }
 
-// Проверить активную сессию
-export async function checkSessionServer(): Promise<boolean> {
+// Перевірити активну сесію
+export async function checkSessionServer(): Promise<AxiosResponse> {
+  const cookieStore = await cookies();
+  const cookieStr = cookieStore
+    .getAll()
+    .map(({ name, value }) => `${name}=${value}`)
+    .join("; ");
+
+  return api.get("/auth/session", {
+    headers: { Cookie: cookieStr },
+  });
+}
+
+// Перевірка сесії з токенами
+export async function checkSession(
+  accessToken?: string,
+  refreshToken?: string
+) {
   try {
-    const cookieStore = await cookies();
-    const cookie = cookieStore.toString();
+    if (accessToken) return { valid: true, cookies: [] };
 
-    await api.get("/api/auth/session", {
-      headers: { Cookie: cookie },
-      withCredentials: true,
-    });
+    if (refreshToken) {
+      const cookieStore = await cookies();
+      const cookieStr = cookieStore
+        .getAll()
+        .map(({ name, value }) => `${name}=${value}`)
+        .join("; ");
 
-    return true;
+      const apiRes = await api.get("/auth/session", {
+        headers: { Cookie: cookieStr },
+      });
+
+      const setCookie = apiRes.headers["set-cookie"];
+      let cookiesArray: Array<{
+        name: string;
+        value: string | undefined;
+        options: { expires?: Date; path?: string; maxAge?: number };
+      }> = [];
+
+      if (setCookie) {
+        const arr = Array.isArray(setCookie) ? setCookie : [setCookie];
+        cookiesArray = arr.map((cookieStr) => {
+          const parsed = parse(cookieStr);
+          const name = Object.keys(parsed)[0];
+          return {
+            name,
+            value: parsed[name],
+            options: {
+              expires: parsed.Expires ? new Date(parsed.Expires) : undefined,
+              path: parsed.Path,
+              maxAge: parsed["Max-Age"] ? Number(parsed["Max-Age"]) : undefined,
+            },
+          };
+        });
+      }
+
+      return { valid: true, cookies: cookiesArray };
+    }
+
+    return { valid: false, cookies: [] };
   } catch {
-    return false;
+    return { valid: false, cookies: [] };
   }
 }
 
 // ===== Заметки =====
 
-// Получить все заметки
+// Отримати всі заметки
 export async function getNotesServer(): Promise<Note[]> {
   const cookieStore = await cookies();
-  const cookie = cookieStore.toString();
+  const cookieStr = cookieStore
+    .getAll()
+    .map(({ name, value }) => `${name}=${value}`)
+    .join("; ");
 
-  const response = await api.get<Note[]>("/api/notes", {
-    headers: { Cookie: cookie },
-    withCredentials: true,
+  const response = await api.get<Note[]>("/notes", {
+    headers: { Cookie: cookieStr },
   });
 
   return response.data;
 }
 
-// Получить заметку по ID
+// Отримати заметку по ID
 export async function getNoteByIdServer(id: string): Promise<Note> {
   const cookieStore = await cookies();
-  const cookie = cookieStore.toString();
+  const cookieStr = cookieStore
+    .getAll()
+    .map(({ name, value }) => `${name}=${value}`)
+    .join("; ");
 
-  const response = await api.get<Note>(`/api/notes/${id}`, {
-    headers: { Cookie: cookie },
-    withCredentials: true,
+  const response = await api.get<Note>(`/notes/${id}`, {
+    headers: { Cookie: cookieStr },
   });
 
   return response.data;
 }
 
-// Создать заметку
+// Створити заметку
 export async function createNoteServer(
   note: Pick<Note, "title" | "content" | "tag">
 ): Promise<Note> {
   const cookieStore = await cookies();
-  const cookie = cookieStore.toString();
+  const cookieStr = cookieStore
+    .getAll()
+    .map(({ name, value }) => `${name}=${value}`)
+    .join("; ");
 
-  const response = await api.post<Note>("/api/notes", note, {
-    headers: { Cookie: cookie },
-    withCredentials: true,
+  const response = await api.post<Note>("/notes", note, {
+    headers: { Cookie: cookieStr },
   });
 
   return response.data;
 }
 
-// Удалить заметку
+// Видалити заметку
 export async function deleteNoteServer(id: string): Promise<void> {
   const cookieStore = await cookies();
-  const cookie = cookieStore.toString();
+  const cookieStr = cookieStore
+    .getAll()
+    .map(({ name, value }) => `${name}=${value}`)
+    .join("; ");
 
-  await api.delete(`/api/notes/${id}`, {
-    headers: { Cookie: cookie },
-    withCredentials: true,
+  await api.delete(`/notes/${id}`, {
+    headers: { Cookie: cookieStr },
   });
 }

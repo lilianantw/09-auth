@@ -1,15 +1,15 @@
 "use client";
+
 import React, { useState } from "react";
 import { useQuery, keepPreviousData } from "@tanstack/react-query";
 import { useDebounce } from "use-debounce";
-import { fetchNotes } from "@/lib/api/api";
+import { getNotes } from "@/lib/api/api";
 import NoteList from "@/components/NoteList/NoteList";
 import Pagination from "@/components/Pagination/Pagination";
 import SearchBox from "@/components/SearchBox/SearchBox";
 import Link from "next/link";
 import css from "./NotesPage.module.css";
 import { Note } from "@/types/note";
-import { getNoteById } from "@/lib/api/api";
 
 interface NotesClientProps {
   initialNotes: Note[];
@@ -32,9 +32,9 @@ export default function NotesClient({
   const [debouncedSearch] = useDebounce(search, 500);
 
   const { data, isLoading, error } = useQuery<NotesQueryData>({
-    queryKey: ["notes", page, debouncedSearch, selectedTag],
+    queryKey: ["notes", page, debouncedSearch, selectedTag ?? ""],
     queryFn: () =>
-      fetchNotes({ page, search: debouncedSearch, tag: selectedTag }),
+      getNotes({ page, search: debouncedSearch, tag: selectedTag ?? "" }),
     placeholderData: keepPreviousData,
     initialData: {
       notes: initialNotes,
@@ -60,13 +60,16 @@ export default function NotesClient({
           Create note +
         </Link>
       </header>
+
       {isLoading && <p>Loading...</p>}
+
       {error && (
         <div className={css.error}>
           Error:{" "}
           {error instanceof Error ? error.message : "Something went wrong"}
         </div>
       )}
+
       {data?.notes?.length ? (
         <>
           <NoteList notes={data.notes} />

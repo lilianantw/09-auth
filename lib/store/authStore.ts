@@ -1,3 +1,4 @@
+// lib/store/authStore.ts
 "use client";
 
 import { create } from "zustand";
@@ -10,7 +11,8 @@ interface AuthStore {
   clearAuth: () => void;
 }
 
-export const useAuthStore = create<AuthStore>((set) => ({
+// Используем требуемый шаблон create<AuthStore>()(...)
+export const useAuthStore = create<AuthStore>()((set) => ({
   user: null,
   isAuthenticated: false,
   setAuth: (user: User) => set({ user, isAuthenticated: true }),

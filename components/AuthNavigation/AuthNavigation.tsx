@@ -7,7 +7,7 @@ import { logoutUser } from "@/lib/api/clientApi";
 
 export default function AuthNavigation() {
   const router = useRouter();
-  const { user, isAuthenticated, clearIsAuthenticated } = useAuthStore();
+  const { user, isAuthenticated, clearAuth } = useAuthStore(); // <-- заменили clearIsAuthenticated на clearAuth
 
   const handleLogout = async () => {
     try {
@@ -15,7 +15,7 @@ export default function AuthNavigation() {
     } catch (err) {
       console.error("Ошибка при выходе:", err);
     } finally {
-      clearIsAuthenticated();
+      clearAuth(); // <-- теперь используем clearAuth
       router.push("/sign-in");
     }
   };

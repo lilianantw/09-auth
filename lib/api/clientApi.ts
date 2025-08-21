@@ -5,8 +5,8 @@ import type { User } from "@/types/user";
 import type { Note } from "@/types/note";
 import { useAuthStore } from "@/lib/store/authStore";
 
-// Единый axios для клиента: cookie-сессия
-const api = axios.create({
+// Axios instance
+export const api = axios.create({
   baseURL: `${process.env.NEXT_PUBLIC_API_URL}/api`,
   headers: { "Content-Type": "application/json" },
   withCredentials: true,
@@ -17,10 +17,10 @@ const api = axios.create({
 export async function getCurrentUser(): Promise<User | null> {
   try {
     const { data } = await api.get<User>("/auth/session");
-    if (data) useAuthStore.getState().setUser(data);
+    if (data) useAuthStore.getState().setAuth(data);
     return data;
   } catch {
-    useAuthStore.getState().clearIsAuthenticated();
+    useAuthStore.getState().clearAuth();
     return null;
   }
 }
@@ -39,7 +39,7 @@ export async function registerUser(
   password: string
 ): Promise<User> {
   const { data } = await api.post<User>("/auth/register", { email, password });
-  useAuthStore.getState().setUser(data);
+  useAuthStore.getState().setAuth(data);
   return data;
 }
 
@@ -51,11 +51,11 @@ export async function loginUser(
     await api.post("/auth/login", { email, password }); // сервер ставит cookies
     const user = await getCurrentUser();
     if (!user)
-      throw new Error("Не удалось получить данные пользователя после логина");
+      throw new Error("Не вдалося отримати дані користувача після логіну");
     return user;
   } catch (error) {
     if (axios.isAxiosError(error) && error.response?.status === 401) {
-      throw new Error("Неверный email или пароль");
+      throw new Error("Невірний email або пароль");
     }
     throw error;
   }
@@ -65,13 +65,13 @@ export async function logoutUser(): Promise<void> {
   try {
     await api.post("/auth/logout");
   } finally {
-    useAuthStore.getState().clearIsAuthenticated();
+    useAuthStore.getState().clearAuth();
   }
 }
 
 export async function updateUserProfile(updates: Partial<User>): Promise<User> {
   const { data } = await api.patch<User>("/users/me", updates);
-  useAuthStore.getState().setUser(data);
+  useAuthStore.getState().setAuth(data);
   return data;
 }
 
@@ -101,7 +101,6 @@ export async function getNotes({
 
   const res = await api.get<Note[]>("/notes", { params });
 
-  // Пытаемся вычислить totalPages из заголовков; если нет — fallback = 1
   let totalPages = 1;
   const totalPagesHeader =
     (res.headers["x-total-pages"] as string | undefined) ??
@@ -139,6 +138,7 @@ export async function createNote(
   return data;
 }
 
-export async function deleteNote(id: string): Promise<void> {
-  await api.delete(`/notes/${id}`);
+export async function deleteNote(id: string): Promise<Note> {
+  const { data } = await api.delete<Note>(`/notes/${id}`);
+  return data;
 }

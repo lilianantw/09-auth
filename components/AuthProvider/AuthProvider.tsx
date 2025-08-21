@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState, ReactNode } from "react";
+import { ReactNode, useEffect, useState } from "react";
 import { useRouter, usePathname } from "next/navigation";
 import { useAuthStore } from "@/lib/store/authStore";
 import { getCurrentUser, checkSession } from "@/lib/api/clientApi";
@@ -10,7 +10,7 @@ interface AuthProviderProps {
 }
 
 export default function AuthProvider({ children }: AuthProviderProps) {
-  const { setUser, clearIsAuthenticated } = useAuthStore();
+  const { setAuth, clearAuth } = useAuthStore(); // обновлено под новый store
   const [loading, setLoading] = useState(true);
   const router = useRouter();
   const pathname = usePathname();
@@ -18,16 +18,12 @@ export default function AuthProvider({ children }: AuthProviderProps) {
   useEffect(() => {
     async function verifyAuth() {
       try {
-        // 1. Перевіряємо чи є валідна сесія
         const sessionValid = await checkSession();
 
         if (sessionValid) {
-          // 2. Якщо є сесія — отримуємо користувача
           const user = await getCurrentUser();
-
           if (user) {
-            setUser(user);
-
+            setAuth(user);
             if (
               pathname.startsWith("/sign-in") ||
               pathname.startsWith("/sign-up")
@@ -35,20 +31,15 @@ export default function AuthProvider({ children }: AuthProviderProps) {
               router.replace("/profile");
             }
           } else {
-            clearIsAuthenticated();
+            clearAuth();
           }
         } else {
-          clearIsAuthenticated();
-
-          if (pathname.startsWith("/profile")) {
-            router.replace("/sign-in");
-          }
+          clearAuth();
+          if (pathname.startsWith("/profile")) router.replace("/sign-in");
         }
       } catch {
-        clearIsAuthenticated();
-        if (pathname.startsWith("/profile")) {
-          router.replace("/sign-in");
-        }
+        clearAuth();
+        if (pathname.startsWith("/profile")) router.replace("/sign-in");
       } finally {
         setLoading(false);
       }

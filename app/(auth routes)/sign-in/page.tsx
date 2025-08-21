@@ -7,7 +7,7 @@ import css from "./SignInPage.module.css";
 
 export default function SignInPage() {
   const router = useRouter();
-  const { setUser } = useAuthStore();
+  const { setAuth } = useAuthStore(); // Изменено с setUser
   const [error, setError] = useState("");
 
   const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
@@ -18,7 +18,7 @@ export default function SignInPage() {
       const password = formData.get("password") as string;
 
       const user = await loginUser(email, password);
-      setUser(user);
+      setAuth(user); // Изменено с setUser
       router.push("/profile");
     } catch (err) {
       console.error("Login failed:", err);

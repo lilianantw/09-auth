@@ -1,47 +1,36 @@
 "use client";
 
-import { useAuthStore } from "@/lib/store/authStore";
+import axios from "axios";
 import type { User } from "@/types/user";
 import type { Note } from "@/types/note";
+import { useAuthStore } from "@/lib/store/authStore";
 
-const API_URL = process.env.NEXT_PUBLIC_API_URL;
+// --- Створюємо інстанс axios ---
+export const api = axios.create({
+  baseURL: `${process.env.NEXT_PUBLIC_API_URL}/api`,
+  headers: { "Content-Type": "application/json" },
+  withCredentials: true,
+});
 
-// --- Вспомогательный fetch с токеном ---
-async function apiFetch<T>(
-  endpoint: string,
-  options: RequestInit = {}
-): Promise<T> {
-  const token = useAuthStore.getState().token;
+// ================= AUTH / USER =================
 
-  const headers: HeadersInit = {
-    "Content-Type": "application/json",
-    ...(options.headers || {}),
-  };
-
-  if (token) {
-    const typedHeaders = headers as Record<string, string>;
-    typedHeaders["Authorization"] = `Bearer ${token}`;
-  }
-
-  const res = await fetch(`${API_URL}/api${endpoint}`, {
-    ...options,
-    headers,
-    credentials: "include",
-  });
-
-  if (!res.ok) {
-    throw new Error(`Ошибка API: ${res.status}`);
-  }
-
-  return res.json();
-}
-
-// === Пользователи ===
 export async function getCurrentUser(): Promise<User | null> {
   try {
-    return await apiFetch<User>("/users/me");
+    const { data } = await api.get<User>("/auth/session");
+    if (data) useAuthStore.getState().setAuth(data);
+    return data;
   } catch {
+    useAuthStore.getState().clearAuth();
     return null;
+  }
+}
+
+export async function checkSession(): Promise<boolean> {
+  try {
+    await api.get("/auth/session");
+    return true;
+  } catch {
+    return false;
   }
 }
 
@@ -49,81 +38,95 @@ export async function registerUser(
   email: string,
   password: string
 ): Promise<User> {
-  const user = await apiFetch<User>("/auth/register", {
-    method: "POST",
-    body: JSON.stringify({ email, password }),
-  });
-  useAuthStore.getState().setUser(user);
-  return user;
+  const { data } = await api.post<User>("/auth/register", { email, password });
+  useAuthStore.getState().setAuth(data);
+  return data;
 }
 
 export async function loginUser(
   email: string,
   password: string
 ): Promise<User> {
-  const data = await apiFetch<{ user: User; token: string }>("/auth/login", {
-    method: "POST",
-    body: JSON.stringify({ email, password }),
-  });
-
-  if (data.token) {
-    useAuthStore.getState().setToken(data.token); // теперь TS не ругается
+  try {
+    await api.post("/auth/login", { email, password }); // сервер ставит cookies
+    const user = await getCurrentUser();
+    if (!user)
+      throw new Error("Не вдалося отримати дані користувача після логіну");
+    return user;
+  } catch (error) {
+    throw error;
   }
-  useAuthStore.getState().setUser(data.user);
-  return data.user;
 }
 
 export async function logoutUser(): Promise<void> {
-  await apiFetch("/auth/logout", { method: "POST" });
-  useAuthStore.getState().clearIsAuthenticated();
-}
-
-export async function checkSession(): Promise<User | null> {
   try {
-    return await apiFetch<User>("/auth/session");
-  } catch {
-    return null;
+    await api.post("/auth/logout");
+  } finally {
+    useAuthStore.getState().clearAuth();
   }
 }
 
 export async function updateUserProfile(updates: Partial<User>): Promise<User> {
-  const user = await apiFetch<User>("/users/me", {
-    method: "PUT",
-    body: JSON.stringify(updates),
-  });
-  useAuthStore.getState().setUser(user);
-  return user;
+  const { data } = await api.patch<User>("/users/me", updates);
+  useAuthStore.getState().setAuth(data);
+  return data;
 }
 
-// === Заметки ===
-export async function getNotes(params?: {
+// ================= NOTES =================
+
+export type FetchNotesParams = {
   page?: number;
   search?: string;
   tag?: string;
-}): Promise<{ notes: Note[]; totalPages: number }> {
-  const query = new URLSearchParams();
-  if (params?.page) query.append("page", params.page.toString());
-  if (params?.search) query.append("search", params.search);
-  if (params?.tag) query.append("tag", params.tag);
+  perPage?: number;
+};
 
-  return apiFetch<{ notes: Note[]; totalPages: number }>(
-    `/notes?${query.toString()}`
-  );
+export type FetchNotesResponse = {
+  notes: Note[];
+  totalPages: number;
+};
+
+export async function getNotes({
+  page = 1,
+  search = "",
+  tag = "",
+  perPage = 12,
+}: FetchNotesParams): Promise<FetchNotesResponse> {
+  const params: Record<string, string | number> = { page, perPage };
+  if (search) params.search = search;
+  if (tag) params.tag = tag;
+
+  const res = await api.get<Note[]>("/notes", { params });
+
+  let totalPages = 1;
+  const totalCountHeader =
+    (res.headers["x-total-count"] as string | undefined) ??
+    (res.headers["X-Total-Count" as keyof typeof res.headers] as unknown as
+      | string
+      | undefined);
+
+  if (totalCountHeader) {
+    const count = parseInt(totalCountHeader, 10);
+    if (!Number.isNaN(count) && perPage > 0)
+      totalPages = Math.max(1, Math.ceil(count / perPage));
+  }
+
+  return { notes: res.data, totalPages };
 }
 
 export async function getNoteById(id: string): Promise<Note> {
-  return apiFetch<Note>(`/notes/${id}`);
+  const { data } = await api.get<Note>(`/notes/${id}`);
+  return data;
 }
 
 export async function createNote(
   note: Omit<Note, "id" | "createdAt">
 ): Promise<Note> {
-  return apiFetch<Note>("/notes", {
-    method: "POST",
-    body: JSON.stringify(note),
-  });
+  const { data } = await api.post<Note>("/notes", note);
+  return data;
 }
 
-export async function deleteNote(id: string): Promise<void> {
-  await apiFetch(`/notes/${id}`, { method: "DELETE" });
+export async function deleteNote(id: string): Promise<Note> {
+  const { data } = await api.delete<Note>(`/notes/${id}`);
+  return data;
 }

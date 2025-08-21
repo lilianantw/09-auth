@@ -9,7 +9,7 @@ import css from "./EditProfilePage.module.css";
 
 export default function EditProfilePage() {
   const router = useRouter();
-  const { user, setUser } = useAuthStore();
+  const { user, setAuth } = useAuthStore(); // <-- заменили setUser на setAuth
 
   const [username, setUsername] = useState(user?.username || "");
   const [loading, setLoading] = useState(false);
@@ -22,7 +22,7 @@ export default function EditProfilePage() {
       setLoading(true);
       // Вызываем функцию clientApi
       const updatedUser = await updateUserProfile({ username });
-      setUser(updatedUser);
+      setAuth(updatedUser); // <-- заменили setUser на setAuth
       router.push("/profile");
     } catch (err) {
       console.error("Failed to update profile:", err);

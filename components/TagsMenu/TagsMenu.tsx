@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import { useAuthStore } from "@/lib/store/authStore";
 import css from "./TagsMenu.module.css";
 import Link from "next/link";
 
@@ -14,7 +15,10 @@ const tags = [
 ];
 
 export default function TagsMenu() {
+  const { isAuthenticated } = useAuthStore();
   const [isOpen, setIsOpen] = useState(false);
+
+  if (!isAuthenticated) return null;
 
   const toggleMenu = () => {
     setIsOpen(!isOpen);

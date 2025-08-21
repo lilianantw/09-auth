@@ -137,6 +137,46 @@ export async function getNotesServer(): Promise<Note[]> {
   return response.data;
 }
 
+// Отримати заметки з пагінацією та фільтрацією
+export async function getNotesWithPaginationServer(
+  page: number = 1,
+  search: string = "",
+  tag: string = "",
+  perPage: number = 12
+): Promise<{ notes: Note[]; totalPages: number }> {
+  const cookieStore = await cookies();
+  const cookieStr = cookieStore
+    .getAll()
+    .map(({ name, value }) => `${name}=${value}`)
+    .join("; ");
+
+  const params: Record<string, string | number> = { page, perPage };
+  if (search) params.search = search;
+  if (tag) params.tag = tag;
+
+  const response = await api.get<Note[]>("/notes", {
+    params,
+    headers: { Cookie: cookieStr },
+  });
+
+  // Пытаемся взять из заголовков total pages / total count
+  let totalPages = 1;
+  const totalPagesHeader = (response.headers["x-total-pages"] ??
+    response.headers["X-Total-Pages"]) as string | undefined;
+  const totalCountHeader = (response.headers["x-total-count"] ??
+    response.headers["X-Total-Count"]) as string | undefined;
+
+  if (totalPagesHeader) {
+    const n = parseInt(totalPagesHeader, 10);
+    if (!Number.isNaN(n) && n > 0) totalPages = n;
+  } else if (totalCountHeader) {
+    const count = parseInt(totalCountHeader, 10);
+    if (!Number.isNaN(count) && perPage > 0)
+      totalPages = Math.max(1, Math.ceil(count / perPage));
+  }
+
+  return { notes: response.data, totalPages };
+}
 // Отримати заметку по ID
 export async function getNoteByIdServer(id: string): Promise<Note> {
   const cookieStore = await cookies();

@@ -3,8 +3,11 @@ import css from "./Header.module.css";
 import Link from "next/link";
 import TagsMenu from "../TagsMenu/TagsMenu";
 import AuthNavigation from "../AuthNavigation/AuthNavigation";
+import { useAuthStore } from "@/lib/store/authStore";
 
 export default function Header() {
+  const { isAuthenticated } = useAuthStore();
+
   return (
     <header className={css.header}>
       <Link href="/" className={css.logo}>
@@ -21,6 +24,7 @@ export default function Header() {
             <TagsMenu />
           </li>
         </ul>
+
         <AuthNavigation />
       </nav>
     </header>

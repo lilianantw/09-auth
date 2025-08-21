@@ -17,7 +17,6 @@ export default function FilterLayout({
     <section style={{ display: "flex" }}>
       <aside style={{ width: "200px" }}>{sidebar}</aside>
       <main style={{ flex: 1 }}>{children}</main>
-      {/* ❌ Удалён <div id="modal-root" /> — он только в корневом layout */}
     </section>
   );
 }

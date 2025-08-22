@@ -1,6 +1,7 @@
 import NotesClient from "./Notes.client";
-import { getNotesServer } from "@/lib/api/serverApi"; // <- правильный импорт
+import { getNotesServer } from "@/lib/api/serverApi";
 import { Metadata } from "next";
+import type { Note } from "@/types/note";
 
 type Props = {
   params: Promise<{ slug?: string[] }>;
@@ -21,7 +22,10 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
     openGraph: {
       title: pageTitle,
       description: pageDescription,
-      url: `https://09-auth-nine-tawny.vercel.app/notes/${tag ?? ""}`,
+      url: `https://09-auth-nine-tawny.vercel.app/notes/${tag ?? ""}`.replace(
+        /\s+/g,
+        ""
+      ),
       siteName: "NoteHub",
       images: [
         {
@@ -40,15 +44,34 @@ export default async function NotesPage({ params }: Props) {
   const { slug } = await params;
   const tag = slug?.[0]?.toLowerCase() === "all" ? undefined : slug?.[0];
 
-  // Получаем все заметки с сервера
-  const allNotes = await getNotesServer();
+  let allNotes: Note[] = [];
+  let totalPages = 1;
 
-  // Фильтруем по тегу, если указан
+  try {
+    const rawData = await getNotesServer();
+
+    // Явно вказуємо тип для безпечного доступу
+    if (rawData && typeof rawData === "object") {
+      if ("notes" in rawData) {
+        const data = rawData as { notes: Note[]; totalPages?: number };
+        if (Array.isArray(data.notes)) {
+          allNotes = data.notes;
+          totalPages =
+            typeof data.totalPages === "number" ? data.totalPages : 1;
+        }
+      } else if (Array.isArray(rawData)) {
+        allNotes = rawData;
+      }
+    } else if (Array.isArray(rawData)) {
+      allNotes = rawData;
+    }
+  } catch (error) {
+    console.error("❌ [page.tsx] Failed to load notes:", error);
+  }
+
   const filteredNotes = tag
-    ? allNotes.filter((note) => note.tag === tag)
+    ? allNotes.filter((note) => note?.tag === tag)
     : allNotes;
-
-  const totalPages = 1; // пока что можно фиксировать 1, если пагинация не нужна
 
   return (
     <NotesClient

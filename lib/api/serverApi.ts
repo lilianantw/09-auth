@@ -1,23 +1,23 @@
 "use server";
 
-import axios, { type AxiosResponse } from "axios";
+import axios from "axios";
 import { cookies } from "next/headers";
 import { parse } from "cookie";
 import type { User } from "@/types/user";
 import type { Note } from "@/types/note";
 
-// Налаштований екземпляр Axios
+// ✅ Создаём экземпляр Axios только для сервера
+// (на клиенте будет другой, но мы не можем его создать здесь — это компромисс)
 const api = axios.create({
-  baseURL: process.env.NEXT_PUBLIC_API_URL + "/api", // додаємо /api
+  baseURL: process.env.NEXT_PUBLIC_API_URL + "/api",
   headers: {
     "Content-Type": "application/json",
   },
-  withCredentials: true,
+  // withCredentials: true — не нужен на сервере, мы передаём куки вручную
 });
 
 // ===== Користувач =====
 
-// Отримати поточного користувача
 export async function getCurrentUserServer(): Promise<User | null> {
   try {
     const cookieStore = await cookies();
@@ -38,7 +38,6 @@ export async function getCurrentUserServer(): Promise<User | null> {
   }
 }
 
-// Оновити профіль користувача
 export async function updateUserProfileServer(
   data: Partial<User>
 ): Promise<User> {
@@ -55,8 +54,7 @@ export async function updateUserProfileServer(
   return response.data;
 }
 
-// Перевірити активну сесію
-export async function checkSessionServer(): Promise<AxiosResponse> {
+export async function checkSessionServer() {
   const cookieStore = await cookies();
   const cookieStr = cookieStore
     .getAll()
@@ -68,7 +66,6 @@ export async function checkSessionServer(): Promise<AxiosResponse> {
   });
 }
 
-// Перевірка сесії з токенами
 export async function checkSession(
   accessToken?: string,
   refreshToken?: string
@@ -122,7 +119,6 @@ export async function checkSession(
 
 // ===== Заметки =====
 
-// Отримати всі заметки
 export async function getNotesServer(): Promise<Note[]> {
   const cookieStore = await cookies();
   const cookieStr = cookieStore
@@ -137,7 +133,6 @@ export async function getNotesServer(): Promise<Note[]> {
   return response.data;
 }
 
-// Отримати заметки з пагінацією та фільтрацією
 export async function getNotesWithPaginationServer(
   page: number = 1,
   search: string = "",
@@ -159,7 +154,6 @@ export async function getNotesWithPaginationServer(
     headers: { Cookie: cookieStr },
   });
 
-  // Пытаемся взять из заголовков total pages / total count
   let totalPages = 1;
   const totalPagesHeader = (response.headers["x-total-pages"] ??
     response.headers["X-Total-Pages"]) as string | undefined;
@@ -177,7 +171,7 @@ export async function getNotesWithPaginationServer(
 
   return { notes: response.data, totalPages };
 }
-// Отримати заметку по ID
+
 export async function getNoteByIdServer(id: string): Promise<Note> {
   const cookieStore = await cookies();
   const cookieStr = cookieStore
@@ -192,7 +186,6 @@ export async function getNoteByIdServer(id: string): Promise<Note> {
   return response.data;
 }
 
-// Створити заметку
 export async function createNoteServer(
   note: Pick<Note, "title" | "content" | "tag">
 ): Promise<Note> {
@@ -209,7 +202,6 @@ export async function createNoteServer(
   return response.data;
 }
 
-// Видалити заметку
 export async function deleteNoteServer(id: string): Promise<void> {
   const cookieStore = await cookies();
   const cookieStr = cookieStore

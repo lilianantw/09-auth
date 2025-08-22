@@ -1,9 +1,9 @@
 "use client";
 
-import React, { useState } from "react";
+import React, { useState, useMemo } from "react";
 import { useQuery, keepPreviousData } from "@tanstack/react-query";
 import { useDebounce } from "use-debounce";
-import { getNotes } from "@/lib/api/clientApi";
+import { getNotes, FetchNotesResponse } from "@/lib/api/clientApi";
 import NoteList from "@/components/NoteList/NoteList";
 import Pagination from "@/components/Pagination/Pagination";
 import SearchBox from "@/components/SearchBox/SearchBox";
@@ -17,11 +17,6 @@ interface NotesClientProps {
   selectedTag?: string;
 }
 
-interface NotesQueryData {
-  notes: Note[];
-  totalPages: number;
-}
-
 export default function NotesClient({
   initialNotes,
   initialTotalPages,
@@ -31,16 +26,27 @@ export default function NotesClient({
   const [search, setSearch] = useState("");
   const [debouncedSearch] = useDebounce(search, 500);
 
-  const { data, isLoading, error } = useQuery<NotesQueryData>({
-    queryKey: ["notes", page, debouncedSearch, selectedTag ?? ""],
+  const hasTagFilter = selectedTag && selectedTag.toLowerCase() !== "all";
+  const shouldFetch = Boolean(debouncedSearch || page !== 1 || hasTagFilter);
+
+  const { data, isLoading, error } = useQuery<FetchNotesResponse>({
+    queryKey: ["notes", page, debouncedSearch, hasTagFilter ? selectedTag : ""],
     queryFn: () =>
-      getNotes({ page, search: debouncedSearch, tag: selectedTag ?? "" }),
+      getNotes({
+        page,
+        search: debouncedSearch,
+        tag: hasTagFilter ? selectedTag : "",
+      }),
     placeholderData: keepPreviousData,
-    initialData: {
-      notes: initialNotes,
-      totalPages: initialTotalPages,
-    },
+    enabled: shouldFetch,
+    staleTime: 10_000,
   });
+
+  const displayedData = useMemo(() => {
+    return shouldFetch
+      ? data
+      : { notes: initialNotes, totalPages: initialTotalPages };
+  }, [shouldFetch, data, initialNotes, initialTotalPages]);
 
   const handleSearchChange = (value: string) => {
     setSearch(value);
@@ -48,8 +54,7 @@ export default function NotesClient({
   };
 
   const handlePageChange = ({ selected }: { selected: number }) => {
-    const newPage = selected + 1;
-    setPage(newPage);
+    setPage(selected + 1);
   };
 
   return (
@@ -61,7 +66,7 @@ export default function NotesClient({
         </Link>
       </header>
 
-      {isLoading && <p>Loading...</p>}
+      {shouldFetch && isLoading && <p>Loading...</p>}
 
       {error && (
         <div className={css.error}>
@@ -70,12 +75,12 @@ export default function NotesClient({
         </div>
       )}
 
-      {data?.notes?.length ? (
+      {displayedData?.notes?.length ? (
         <>
-          <NoteList notes={data.notes} />
-          {data.totalPages > 1 && (
+          <NoteList notes={displayedData.notes} />
+          {displayedData.totalPages > 1 && (
             <Pagination
-              pageCount={data.totalPages}
+              pageCount={displayedData.totalPages}
               onPageChange={handlePageChange}
               currentPage={page - 1}
             />

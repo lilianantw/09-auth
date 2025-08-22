@@ -1,10 +1,9 @@
 import NotesClient from "./Notes.client";
-import { getNotesServer } from "@/lib/api/serverApi";
+import { fetchNotes } from "@/lib/api/serverApi";
 import { Metadata } from "next";
-import type { Note } from "@/types/note";
 
 type Props = {
-  params: Promise<{ slug?: string[] }>;
+  params: Promise<{ slug: string[] }>;
 };
 
 export async function generateMetadata({ params }: Props): Promise<Metadata> {
@@ -42,42 +41,7 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
 
 export default async function NotesPage({ params }: Props) {
   const { slug } = await params;
-  const tag = slug?.[0]?.toLowerCase() === "all" ? undefined : slug?.[0];
-
-  let allNotes: Note[] = [];
-  let totalPages = 1;
-
-  try {
-    const rawData = await getNotesServer();
-
-    // Явно вказуємо тип для безпечного доступу
-    if (rawData && typeof rawData === "object") {
-      if ("notes" in rawData) {
-        const data = rawData as { notes: Note[]; totalPages?: number };
-        if (Array.isArray(data.notes)) {
-          allNotes = data.notes;
-          totalPages =
-            typeof data.totalPages === "number" ? data.totalPages : 1;
-        }
-      } else if (Array.isArray(rawData)) {
-        allNotes = rawData;
-      }
-    } else if (Array.isArray(rawData)) {
-      allNotes = rawData;
-    }
-  } catch (error) {
-    console.error("❌ [page.tsx] Failed to load notes:", error);
-  }
-
-  const filteredNotes = tag
-    ? allNotes.filter((note) => note?.tag === tag)
-    : allNotes;
-
-  return (
-    <NotesClient
-      initialNotes={filteredNotes}
-      initialTotalPages={totalPages}
-      selectedTag={tag}
-    />
-  );
+  const tag = slug[0] === "All" ? "" : slug?.[0];
+  const rawData = await fetchNotes("", 1, tag);
+  return <NotesClient initialData={rawData} initialTag={tag} />;
 }

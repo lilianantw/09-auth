@@ -1,6 +1,6 @@
 "use client";
 
-import { api } from "@/lib/api/api"; // <- используем общий, предоставленный экземпляр
+import { nextServer } from "./api";
 import axios from "axios";
 import type { User } from "@/types/user";
 import type { Note } from "@/types/note";
@@ -10,7 +10,7 @@ import { useAuthStore } from "@/lib/store/authStore";
 
 export async function getCurrentUser(): Promise<User | null> {
   try {
-    const { data } = await api.get<User>("/auth/session");
+    const { data } = await nextServer.get<User>("/auth/session");
     if (data) useAuthStore.getState().setAuth?.(data);
     return data;
   } catch (err) {
@@ -21,7 +21,7 @@ export async function getCurrentUser(): Promise<User | null> {
 
 export async function checkSession(): Promise<boolean> {
   try {
-    const response = await api.get("/auth/session");
+    const response = await nextServer.get("/auth/session");
     // Перевіряємо не лише статус, а й логічне поле success
     return response.data?.success === true;
   } catch {
@@ -34,7 +34,7 @@ export async function registerUser(
   password: string
 ): Promise<User> {
   try {
-    const { data } = await api.post<User>("/auth/register", {
+    const { data } = await nextServer.post<User>("/auth/register", {
       email,
       password,
     });
@@ -54,7 +54,7 @@ export async function loginUser(
 ): Promise<User> {
   try {
     // Сервер должен ставить cookie-сессию
-    await api.post("/auth/login", { email, password });
+    await nextServer.post("/auth/login", { email, password });
 
     // Получаем данные юзера по сессии
     const user = await getCurrentUser();
@@ -71,14 +71,14 @@ export async function loginUser(
 
 export async function logoutUser(): Promise<void> {
   try {
-    await api.post("/auth/logout");
+    await nextServer.post("/auth/logout");
   } finally {
     useAuthStore.getState().clearAuth?.();
   }
 }
 
 export async function updateUserProfile(updates: Partial<User>): Promise<User> {
-  const { data } = await api.patch<User>("/users/me", updates);
+  const { data } = await nextServer.patch<User>("/users/me", updates);
   useAuthStore.getState().setAuth?.(data);
   return data;
 }
@@ -97,7 +97,7 @@ export type FetchNotesResponse = {
   totalPages: number;
 };
 
-export async function getNotes({
+export async function getNotesClient({
   page = 1,
   search = "",
   tag = "",
@@ -106,42 +106,27 @@ export async function getNotes({
   const params: Record<string, string | number> = { page, perPage };
   if (search) params.search = search;
   if (tag) params.tag = tag;
-
-  const res = await api.get<Note[]>("/notes", { params });
-
+  console.log(params);
+  const res = await nextServer.get<FetchNotesResponse>("/notes", { params });
+  console.log("res", res);
   // Пытаемся взять из заголовков total pages / total count
-  let totalPages = 1;
-  const totalPagesHeader = (res.headers["x-total-pages"] ??
-    res.headers["X-Total-Pages"]) as string | undefined;
-  const totalCountHeader = (res.headers["x-total-count"] ??
-    res.headers["X-Total-Count"]) as string | undefined;
-
-  if (totalPagesHeader) {
-    const n = parseInt(totalPagesHeader, 10);
-    if (!Number.isNaN(n) && n > 0) totalPages = n;
-  } else if (totalCountHeader) {
-    const count = parseInt(totalCountHeader, 10);
-    if (!Number.isNaN(count) && perPage > 0)
-      totalPages = Math.max(1, Math.ceil(count / perPage));
-  }
-
-  return { notes: res.data, totalPages };
+  return res.data;
 }
 
 export async function getNoteById(id: string): Promise<Note> {
-  const { data } = await api.get<Note>(`/notes/${id}`);
+  const { data } = await nextServer.get<Note>(`/notes/${id}`);
   return data;
 }
 
 export async function createNote(
   note: Omit<Note, "id" | "createdAt">
 ): Promise<Note> {
-  const { data } = await api.post<Note>("/notes", note);
+  const { data } = await nextServer.post<Note>("/notes", note);
   return data;
 }
 
 // Возвращаем объект удалённой заметки (если сервер возвращает её в теле)
 export async function deleteNote(id: string): Promise<Note | null> {
-  const { data } = await api.delete<Note>(`/notes/${id}`);
+  const { data } = await nextServer.delete<Note>(`/notes/${id}`);
   return data ?? null;
 }

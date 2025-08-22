@@ -5,16 +5,7 @@ import { cookies } from "next/headers";
 import { parse } from "cookie";
 import type { User } from "@/types/user";
 import type { Note } from "@/types/note";
-
-// ✅ Создаём экземпляр Axios только для сервера
-// (на клиенте будет другой, но мы не можем его создать здесь — это компромисс)
-const api = axios.create({
-  baseURL: process.env.NEXT_PUBLIC_API_URL + "/api",
-  headers: {
-    "Content-Type": "application/json",
-  },
-  // withCredentials: true — не нужен на сервере, мы передаём куки вручную
-});
+import { nextServer } from "./api";
 
 // ===== Користувач =====
 
@@ -26,7 +17,7 @@ export async function getCurrentUserServer(): Promise<User | null> {
       .map(({ name, value }) => `${name}=${value}`)
       .join("; ");
 
-    const response = await api.get<User>("/users/me", {
+    const response = await nextServer.get<User>("/users/me", {
       headers: { Cookie: cookieStr },
     });
 
@@ -47,7 +38,7 @@ export async function updateUserProfileServer(
     .map(({ name, value }) => `${name}=${value}`)
     .join("; ");
 
-  const response = await api.patch<User>("/users/me", data, {
+  const response = await nextServer.patch<User>("/users/me", data, {
     headers: { Cookie: cookieStr },
   });
 
@@ -61,7 +52,7 @@ export async function checkSessionServer() {
     .map(({ name, value }) => `${name}=${value}`)
     .join("; ");
 
-  return api.get("/auth/session", {
+  return nextServer.get("/auth/session", {
     headers: { Cookie: cookieStr },
   });
 }
@@ -80,7 +71,7 @@ export async function checkSession(
         .map(({ name, value }) => `${name}=${value}`)
         .join("; ");
 
-      const apiRes = await api.get("/auth/session", {
+      const apiRes = await nextServer.get("/auth/session", {
         headers: { Cookie: cookieStr },
       });
 
@@ -118,6 +109,27 @@ export async function checkSession(
 }
 
 // ===== Заметки =====
+export const fetchNotes = async (
+  search: string,
+  page: number,
+  tag: string | undefined
+) => {
+  const cookieStore = await cookies();
+  const params = {
+    ...(search && { search }),
+    tag,
+    page,
+    perPage: 12,
+  };
+  const headers = {
+    Cookie: cookieStore.toString(),
+  };
+  const response = await nextServer.get("/notes", {
+    params,
+    headers,
+  });
+  return response.data;
+};
 
 export async function getNotesServer(): Promise<Note[]> {
   const cookieStore = await cookies();
@@ -126,7 +138,7 @@ export async function getNotesServer(): Promise<Note[]> {
     .map(({ name, value }) => `${name}=${value}`)
     .join("; ");
 
-  const response = await api.get<Note[]>("/notes", {
+  const response = await nextServer.get<Note[]>("/notes", {
     headers: { Cookie: cookieStr },
   });
 
@@ -149,7 +161,7 @@ export async function getNotesWithPaginationServer(
   if (search) params.search = search;
   if (tag) params.tag = tag;
 
-  const response = await api.get<Note[]>("/notes", {
+  const response = await nextServer.get<Note[]>("/notes", {
     params,
     headers: { Cookie: cookieStr },
   });
@@ -179,13 +191,13 @@ export async function getNoteByIdServer(id: string): Promise<Note> {
     .map(({ name, value }) => `${name}=${value}`)
     .join("; ");
 
-  const response = await api.get<Note>(`/notes/${id}`, {
+  const response = await nextServer.get<Note>(`/notes/${id}`, {
     headers: { Cookie: cookieStr },
   });
 
   return response.data;
 }
-
+//********/
 export async function createNoteServer(
   note: Pick<Note, "title" | "content" | "tag">
 ): Promise<Note> {
@@ -195,7 +207,7 @@ export async function createNoteServer(
     .map(({ name, value }) => `${name}=${value}`)
     .join("; ");
 
-  const response = await api.post<Note>("/notes", note, {
+  const response = await nextServer.post<Note>("/notes", note, {
     headers: { Cookie: cookieStr },
   });
 
@@ -209,7 +221,7 @@ export async function deleteNoteServer(id: string): Promise<void> {
     .map(({ name, value }) => `${name}=${value}`)
     .join("; ");
 
-  await api.delete(`/notes/${id}`, {
+  await nextServer.delete(`/notes/${id}`, {
     headers: { Cookie: cookieStr },
   });
 }

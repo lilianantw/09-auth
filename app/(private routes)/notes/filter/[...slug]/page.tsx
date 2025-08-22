@@ -9,7 +9,7 @@ type Props = {
 
 export async function generateMetadata({ params }: Props): Promise<Metadata> {
   const { slug } = await params;
-  const tag = slug?.[0]?.toLowerCase() === "all" ? undefined : slug?.[0];
+  const tag = slug?.[0]?.toLowerCase() === "All" ? undefined : slug?.[0];
 
   const pageTitle = tag ? `Notes - ${tag} | NoteHub` : "All Notes | NoteHub";
   const pageDescription = tag

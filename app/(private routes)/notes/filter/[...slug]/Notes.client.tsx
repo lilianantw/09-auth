@@ -26,7 +26,7 @@ export default function NotesClient({
   const [search, setSearch] = useState("");
   const [debouncedSearch] = useDebounce(search, 500);
 
-  const hasTagFilter = selectedTag && selectedTag.toLowerCase() !== "all";
+  const hasTagFilter = selectedTag && selectedTag.toLowerCase() !== "All";
   const shouldFetch = Boolean(debouncedSearch || page !== 1 || hasTagFilter);
 
   const { data, isLoading, error } = useQuery<FetchNotesResponse>({

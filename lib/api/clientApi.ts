@@ -119,9 +119,7 @@ export async function getNoteById(id: string): Promise<Note> {
   return data;
 }
 
-export async function createNote(
-  note: CreateNoteData // ✅ Параметр функции
-): Promise<Note> {
+export async function createNote(note: CreateNoteData): Promise<Note> {
   const { data } = await nextServer.post<Note>("/notes", note);
   return data;
 }

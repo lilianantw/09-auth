@@ -5,6 +5,7 @@ import axios from "axios";
 import type { User } from "@/types/user";
 import type { Note } from "@/types/note";
 import { useAuthStore } from "@/lib/store/authStore";
+import type { CreateNoteData } from "@/types/note"; //***** */
 
 /* ================= AUTH / USER ================= */
 
@@ -119,7 +120,7 @@ export async function getNoteById(id: string): Promise<Note> {
 }
 
 export async function createNote(
-  note: Omit<Note, "id" | "createdAt">
+  note: CreateNoteData // ✅ Параметр функции
 ): Promise<Note> {
   const { data } = await nextServer.post<Note>("/notes", note);
   return data;

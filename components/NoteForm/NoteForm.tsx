@@ -4,13 +4,26 @@ import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { useNoteStore } from "@/lib/store/noteStore";
 import { createNote } from "@/lib/api/clientApi";
 import css from "./NoteForm.module.css";
+import { Note, CreateNoteData } from "@/types/note"; // ✅ Оба типа
 
 export default function NoteForm() {
   const { draft, setDraft, clearDraft } = useNoteStore();
   const router = useRouter();
   const queryClient = useQueryClient();
 
-  const mutation = useMutation({
+  // const mutation = useMutation({
+  //   mutationFn: createNote,
+  //   onSuccess: () => {
+  //     queryClient.invalidateQueries({ queryKey: ["notes"] });
+  //     clearDraft();
+  //     router.back();
+  //   },
+  //   onError: (error) => {
+  //     console.error("Failed to create note:", error);
+  //   },
+  // });
+
+  const mutation = useMutation<Note, Error, CreateNoteData>({
     mutationFn: createNote,
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["notes"] });
@@ -19,6 +32,8 @@ export default function NoteForm() {
     },
     onError: (error) => {
       console.error("Failed to create note:", error);
+
+      // alert("Failed to create note: " + error.message);
     },
   });
 
@@ -38,8 +53,8 @@ export default function NoteForm() {
       title: draft.title,
       content: draft.content,
       tag: draft.tag as "Todo" | "Work" | "Personal" | "Meeting" | "Shopping",
-      updatedAt: now,
-      date: now,
+      // updatedAt: now,
+      // date: now,
     });
   };
 
